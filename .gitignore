@@ -48,9 +48,9 @@ data/
 *.sqlite3
 
 # Backend uploads
-chatbot-langgraph/uploads/
-chatbot-langgraph/temp/
-chatbot-langgraph/credentials/
+backend/uploads/
+backend/temp/
+backend/credentials/
 # Misc
 *.pkl
 *.pickle
