@@ -50,7 +50,7 @@ data/
 # Backend uploads
 chatbot-langgraph/uploads/
 chatbot-langgraph/temp/
-
+chatbot-langgraph/credentials/
 # Misc
 *.pkl
 *.pickle
