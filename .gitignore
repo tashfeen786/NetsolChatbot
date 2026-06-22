@@ -56,3 +56,8 @@ backend/credentials/
 *.pickle
 .DS_Store
 Thumbs.db
+
+backend/credentials/
+*.json
+*.pem
+*.key
