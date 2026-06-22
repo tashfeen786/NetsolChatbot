@@ -47,16 +47,17 @@ data/
 *.sqlite
 *.sqlite3
 
-# Backend uploads
+# Backend uploads & temp
 backend/uploads/
 backend/temp/
-backend/credentials/
+
 # Misc
 *.pkl
 *.pickle
 .DS_Store
 Thumbs.db
 
+# Credentials & secret keys (CRITICAL)
 backend/credentials/
 *.json
 *.pem
