@@ -30,6 +30,40 @@ class ChartErrorBoundary extends React.Component {
   }
 }
 
+// ---------- Robust Chart Data Parser ----------
+function tryParseChartData(jsonString) {
+  try {
+    return JSON.parse(jsonString);
+  } catch (error) {
+    // 🔥 Handle Python tuple format: "data": ["('month':'2026-01','value':3935677.0)", ...]
+    if (jsonString.includes('"data":')) {
+      try {
+        const dataMatch = jsonString.match(/"data":\s*\[(.*?)\]\s*(?=,|})/s);
+        if (dataMatch) {
+          const tupleArrayStr = dataMatch[1];
+          const tuples = tupleArrayStr.split(/\),\s*\(/).map(s => s.replace(/[()]/g, '').trim());
+          const parsedData = tuples.map(tuple => {
+            const pairs = tuple.split(',').map(p => p.trim());
+            const obj = {};
+            pairs.forEach(pair => {
+              const [key, val] = pair.split(':').map(s => s.trim().replace(/^'|'$/g, ''));
+              if (!isNaN(val)) obj[key] = parseFloat(val);
+              else obj[key] = val.replace(/^"|"$/g, '');
+            });
+            return obj;
+          });
+          const cleanJson = jsonString.replace(/"data":\s*\[.*?\]/, `"data":${JSON.stringify(parsedData)}`);
+          return JSON.parse(cleanJson);
+        }
+      } catch (e) {
+        console.warn('Fallback tuple parse failed:', e);
+      }
+    }
+    return null;
+  }
+}
+
+// ---------- Message Parser ----------
 function parseMessage(content) {
   if (!content || typeof content !== 'string') {
     return [{ type: 'text', content: '' }];
@@ -48,15 +82,13 @@ function parseMessage(content) {
       });
     }
 
-    try {
-      const chartData = JSON.parse(match[1].trim());
-      if (!chartData || !Array.isArray(chartData.data) || chartData.data.length === 0) {
-        console.warn('⚠️ Chart JSON valid but data missing/empty:', chartData);
-      } else {
-        parts.push({ type: 'chart', data: chartData });
-      }
-    } catch (parseErr) {
-      console.warn('⚠️ Invalid chart JSON:', parseErr);
+    const rawJson = match[1].trim();
+    const chartData = tryParseChartData(rawJson);
+
+    if (chartData && chartData.data && Array.isArray(chartData.data) && chartData.data.length > 0) {
+      parts.push({ type: 'chart', data: chartData });
+    } else {
+      console.warn('⚠️ Chart JSON invalid or empty, showing raw tag as text.');
       parts.push({ type: 'text', content: match[0] });
     }
 
