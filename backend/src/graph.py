@@ -1,6 +1,7 @@
+import os
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.checkpoint.memory import MemorySaver
 from .state import AgentState
 from .nodes.llm_responder import llm_responder
 from .nodes.retriever import retriever_node
@@ -22,6 +23,5 @@ def build_graph():
     )
     builder.add_edge("tools", "llm")
 
-    memory = MemorySaver()
-    graph = builder.compile(checkpointer=memory)
+    graph = builder.compile(checkpointer=MemorySaver())
     return graph

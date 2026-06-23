@@ -30,14 +30,6 @@ class ChartErrorBoundary extends React.Component {
   }
 }
 
-/**
- * Assistant message ko parse karta hai.
- * <chart_data>{...}</chart_data> -> chart component
- * Baaki text -> normal paragraphs
- *
- * Component se bahar rakha hai taaki har render pe naya function
- * na bane (closure recreation avoid karne ke liye).
- */
 function parseMessage(content) {
   if (!content || typeof content !== 'string') {
     return [{ type: 'text', content: '' }];
@@ -49,7 +41,6 @@ function parseMessage(content) {
   let lastIndex = 0;
 
   while ((match = regex.exec(content)) !== null) {
-    // text before chart
     if (match.index > lastIndex) {
       parts.push({
         type: 'text',
@@ -57,42 +48,25 @@ function parseMessage(content) {
       });
     }
 
-    // chart data parse
     try {
       const chartData = JSON.parse(match[1].trim());
-
-      // 🔒 Validation: JSON valid hone ka matlab data valid hai nahi hota.
-      // Agar 'data' key missing/empty hai, ChartMessage silently null
-      // return karega aur user ko khali jagah dikhegi, error boundary
-      // bhi nahi pakdegi (kyunki throw nahi hota). Isliye yahin check karo.
-      if (
-        !chartData ||
-        !Array.isArray(chartData.data) ||
-        chartData.data.length === 0
-      ) {
+      if (!chartData || !Array.isArray(chartData.data) || chartData.data.length === 0) {
         console.warn('⚠️ Chart JSON valid but data missing/empty:', chartData);
-        parts.push({
-          type: 'text',
-          content: '[chart data missing or empty]',
-        });
       } else {
         parts.push({ type: 'chart', data: chartData });
-        console.log('✅ Chart parsed:', chartData);
       }
     } catch (parseErr) {
       console.warn('⚠️ Invalid chart JSON:', parseErr);
-      parts.push({ type: 'text', content: match[0] }); // fallback
+      parts.push({ type: 'text', content: match[0] });
     }
 
     lastIndex = regex.lastIndex;
   }
 
-  // remaining text after last chart
   if (lastIndex < content.length) {
     parts.push({ type: 'text', content: content.substring(lastIndex) });
   }
 
-  // agar koi chart nahi mila toh pura content text hai
   if (parts.length === 0) {
     parts.push({ type: 'text', content });
   }
@@ -100,29 +74,32 @@ function parseMessage(content) {
   return parts;
 }
 
-// ---------- Assistant message renderer (memoized parse) ----------
+// ---------- Assistant message renderer ----------
 function AssistantMessageContent({ content }) {
-  // useMemo: jab tak yeh specific message ka content change nahi hota,
-  // re-parse skip hoga even if parent (MessageList) kisi aur reason se
-  // re-render ho (e.g. naya message aaya, isLoading toggle hua).
   const parts = useMemo(() => parseMessage(content), [content]);
 
+  const textParts  = parts.filter(p => p.type === 'text');
+  const chartParts = parts.filter(p => p.type === 'chart');
+
   return (
-    <div>
-      {parts.map((part, i) => {
-        if (part.type === 'chart') {
-          return (
+    <div className="w-full">
+      {/* Text inside bubble */}
+      {textParts.map((part, i) => (
+        <div key={i} className="whitespace-pre-wrap">
+          {part.content}
+        </div>
+      ))}
+
+      {/* Charts outside bubble — full width */}
+      {chartParts.length > 0 && (
+        <div className="mt-3 -mx-4 -mb-2">
+          {chartParts.map((part, i) => (
             <ChartErrorBoundary key={i}>
               <ChartMessage chartData={part.data} />
             </ChartErrorBoundary>
-          );
-        }
-        return (
-          <div key={i} className="whitespace-pre-wrap">
-            {part.content}
-          </div>
-        );
-      })}
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -131,7 +108,6 @@ function AssistantMessageContent({ content }) {
 function MessageList() {
   const { currentMessages: messages, isLoading } = useChat();
 
-  // 🔒 Safety: agar messages nahi hai toh empty state dikhao
   if (!messages || !Array.isArray(messages)) {
     return (
       <div className="flex-1 overflow-y-auto p-4 text-gray-500">
@@ -143,8 +119,9 @@ function MessageList() {
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       {messages.map((msg, idx) => {
-        const isUser = msg.role === 'user';
+        const isUser      = msg.role === 'user';
         const isAssistant = msg.role === 'assistant';
+        const hasChart    = isAssistant && msg.content?.includes('<chart_data>');
 
         return (
           <div
@@ -152,17 +129,17 @@ function MessageList() {
             className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-2xl rounded-2xl px-4 py-2 ${
+              className={`rounded-2xl px-4 py-3 ${
                 isUser
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-100 text-gray-800'
+                  ? 'max-w-2xl bg-indigo-600 text-white'
+                  : hasChart
+                    ? 'w-full max-w-4xl bg-gray-100 text-gray-800'
+                    : 'max-w-2xl bg-gray-100 text-gray-800'
               }`}
             >
               {isUser ? (
-                // User message – plain text
                 <div className="whitespace-pre-wrap">{msg.content}</div>
               ) : isAssistant ? (
-                // Assistant message – parse chart + text (memoized)
                 <AssistantMessageContent content={msg.content} />
               ) : null}
             </div>
