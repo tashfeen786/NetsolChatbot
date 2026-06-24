@@ -1,194 +1,318 @@
-# 🤖 NetsolChatbot
+# NetsolChatbot
 
-> An intelligent, multi‑tool AI assistant built with LangGraph, Gemini, and React.  
-> Supports RAG (PDF/DOCX/TXT), live Google Search, Google Calendar, and business data queries with interactive charts.
+<div align="center">
+
+An intelligent, multi-tool AI assistant built for **NetsolTech** — powered by LangGraph, Google Gemini, and React.  
+Supports RAG document Q&A, live web search, Google Calendar, natural language SQL queries, and interactive data visualizations.
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18+-61DAFB.svg)](https://reactjs.org/)
 [![LangGraph](https://img.shields.io/badge/LangGraph-0.2+-orange.svg)](https://langchain-ai.github.io/langgraph/)
 [![Gemini](https://img.shields.io/badge/Gemini-2.5_Flash_Lite-purple.svg)](https://deepmind.google/technologies/gemini/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+</div>
 
 ---
 
-## 🚀 Features
+## ✨ Features
 
-- 🧠 **LangGraph Agent** – tool‑calling with memory and streaming.
-- 📄 **RAG (Retrieval‑Augmented Generation)** – upload PDF, DOCX, or TXT files, ask questions based on their content.
-- 📊 **Business Database** – query SQLite with natural language and visualise results using **bar, pie, and line charts** (recharts).
-- 🌐 **Google Search** – get up‑to‑date information from the web.
-- 📅 **Google Calendar** – check meetings and events directly.
-- 🔄 **Streaming Responses** – real‑time token‑by‑token output.
-- 💬 **Chat History** – persistent threads with sidebar navigation.
-- 🛡️ **Secure** – API keys and credentials never exposed (`.gitignore` applied).
+| Feature | Description |
+|---|---|
+| 🧠 **LangGraph Agent** | Multi-step tool-calling agent with streaming responses |
+| 📄 **RAG (Document Q&A)** | Upload PDF, DOCX, or TXT — ask questions from content |
+| 📊 **Text-to-SQL + Charts** | Natural language → SQL → interactive bar, line, pie charts |
+| 🌐 **Web Search** | Real-time search via Tavily API |
+| 📅 **Google Calendar** | Check and create meetings via service account |
+| 💬 **Chat History** | Persistent multi-thread conversations with sidebar |
+| ⚡ **Streaming** | Real-time token-by-token response streaming |
+
+---
+
+## 🏗️ Architecture
+
+```
+User (React Frontend)
+        │
+        ▼
+  FastAPI Backend
+        │
+        ▼
+  LangGraph Graph
+   ┌────┴────┐
+   ▼         ▼
+Retriever   LLM Node (Gemini)
+(ChromaDB)      │
+                ├── Tool: query_business_database → SQLite
+                ├── Tool: web_search → Tavily API
+                ├── Tool: get_upcoming_events → Google Calendar
+                └── Tool: create_calendar_event → Google Calendar
+```
+
+**Request Flow:**
+1. User message → FastAPI `/api/chat`
+2. LangGraph `retriever_node` → similarity search in ChromaDB (top 10 chunks)
+3. LangGraph `llm_node` → Gemini decides: answer from context OR call a tool
+4. If tool called → `tools_node` executes → result back to LLM
+5. Final response streamed chunk-by-chunk to frontend
+6. Frontend parses `<chart_data>` tags → renders Recharts visualizations
 
 ---
 
 ## 🧰 Tech Stack
 
 | Layer | Technology |
-|-------|------------|
-| **Backend** | Python 3.10+, FastAPI, LangGraph, LangChain, Sentence‑Transformers, Google‑GenerativeAI |
-| **Frontend** | React 18, Vite, Tailwind CSS, recharts, Lucide‑React |
-| **Database** | SQLite (local) + Chroma vector store |
-| **APIs** | Google Gemini 2.5 Flash‑Lite, Google Calendar, Google Search (Custom Search JSON API) |
-| **Deployment** | Ready for Docker / Vercel (frontend) & Railway / Render (backend) |
+|---|---|
+| **Backend** | Python 3.10+, FastAPI, Uvicorn |
+| **AI / Agents** | LangGraph, LangChain, Google Gemini 2.5 Flash-Lite |
+| **Embeddings** | Sentence-Transformers (`all-MiniLM-L6-v2`) |
+| **Vector Store** | ChromaDB |
+| **Database** | SQLite (chat history + business data) |
+| **Frontend** | React 18, Vite, Tailwind CSS |
+| **Charts** | Recharts |
+| **Icons** | Lucide React |
+| **Search** | Tavily Search API |
+| **Calendar** | Google Calendar API (Service Account) |
 
 ---
 
 ## 📁 Project Structure
-NetsolChatbot/
-├── chatbot-langgraph/ # Backend (FastAPI + LangGraph)
-│ ├── app/ # Core logic (agents, tools, routers)
-│ ├── uploads/ # Temporary file storage (ignored)
-│ ├── .env # Environment variables (ignored)
-│ └── run.py # Entry point
-├── frontend/ # React + Vite frontend
-│ ├── src/
-│ ├── public/
-│ ├── .env.local # Frontend env (ignored)
-│ └── package.json
-├── data/ # SQLite DB & vector store (ignored)
-├── .gitignore # Excludes secrets, builds, etc.
-└── README.md # You are here
 
-text
+```
+NetsolChatbot/
+├── backend/
+│   ├── main.py                    # FastAPI app + endpoints
+│   ├── run.py                     # Uvicorn entry point
+│   ├── src/
+│   │   ├── graph.py               # LangGraph workflow
+│   │   ├── state.py               # AgentState definition
+│   │   ├── nodes/
+│   │   │   ├── retriever.py       # ChromaDB similarity search
+│   │   │   └── llm_responder.py   # Gemini LLM node
+│   │   ├── rag/
+│   │   │   ├── embeddings.py      # SentenceTransformer wrapper
+│   │   │   ├── vector_store.py    # ChromaDB setup
+│   │   │   └── document_loader.py # PDF/DOCX/TXT processing
+│   │   ├── tools/
+│   │   │   ├── calendar_tool.py   # Google Calendar tools
+│   │   │   ├── search_tool.py     # Tavily web search
+│   │   │   └── sql_tool.py        # Text-to-SQL tool
+│   │   ├── models/
+│   │   │   └── llm_factory.py     # Gemini client factory
+│   │   ├── database.py            # SQLite chat history
+│   │   └── utils/
+│   │       └── helpers.py         # Title generation etc.
+│   ├── scripts/
+│   │   └── create_sample_db.py    # Sample business data seeder
+│   ├── credentials/               # Google service account (gitignored)
+│   ├── data/                      # SQLite DBs + ChromaDB (gitignored)
+│   ├── .env                       # Environment variables (gitignored)
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── chat/
+│   │   │   │   ├── ChatWindow.jsx
+│   │   │   │   ├── MessageList.jsx    # Chart tag parser + renderer
+│   │   │   │   ├── MessageInput.jsx   # File upload + message send
+│   │   │   │   ├── ChartMessage.jsx   # Recharts visualization
+│   │   │   │   └── TypingIndicator.jsx
+│   │   │   └── layout/
+│   │   │       ├── ChatLayout.jsx
+│   │   │       └── Sidebar.jsx
+│   │   ├── context/
+│   │   │   └── ChatContext.jsx        # Global state + streaming logic
+│   │   └── services/
+│   │       └── api.js                 # Backend API calls
+│   └── package.json
+├── .gitignore
+└── README.md
+```
 
 ---
 
-## ⚙️ Setup Instructions
+## ⚙️ Setup
 
 ### Prerequisites
-- Python 3.10+
-- Node.js 16+
-- Git
 
-### 1️⃣ Clone the Repository
+- Python 3.10+
+- Node.js 18+
+- A Google Cloud project with:
+  - Gemini API enabled → [Get API key](https://aistudio.google.com/apikey)
+  - Google Calendar API enabled → [Service Account setup](https://console.cloud.google.com/iam-admin/serviceaccounts)
+- Tavily API key → [Get free key](https://tavily.com) (1000 searches/month free)
+
+---
+
+### 1. Clone
 
 ```bash
 git clone https://github.com/tashfeen786/NetsolChatbot.git
 cd NetsolChatbot
-2️⃣ Backend Setup
-bash
-cd chatbot-langgraph
+```
+
+---
+
+### 2. Backend Setup
+
+```bash
+cd backend
 python -m venv venv
-source venv/bin/activate      # Linux/Mac
-# or .\venv\Scripts\activate  # Windows
+
+# Windows
+.\venv\Scripts\activate
+# Linux/Mac
+source venv/bin/activate
+
 pip install -r requirements.txt
-Create .env file in chatbot-langgraph/:
+```
 
-env
+Create `backend/.env`:
+
+```env
+# Gemini
 GOOGLE_API_KEY=your_gemini_api_key
-GOOGLE_CSE_ID=your_google_search_engine_id
-GOOGLE_CALENDAR_CREDENTIALS=path/to/calendar-credentials.json
-DATABASE_URL=sqlite:///../data/chat.db
-Run the backend:
+MODEL_NAME=gemini-2.5-flash-lite
 
-bash
+# Google Calendar (Service Account)
+GOOGLE_SERVICE_ACCOUNT_FILE=credentials/your-service-account.json
+GOOGLE_CALENDAR_ID=your_calendar_id@group.calendar.google.com
+
+# Tavily Web Search
+TAVILY_API_KEY=tvly-your_tavily_key
+
+# Business Database
+BUSINESS_DB_PATH=data/business.db
+```
+
+Place your Google Service Account JSON in `backend/credentials/`.
+
+Seed the sample business database:
+
+```bash
+python scripts/create_sample_db.py
+```
+
+Start the backend:
+
+```bash
 python run.py
-# Server runs on http://localhost:8000
-3️⃣ Frontend Setup
-bash
+# API running at http://localhost:8000
+# Docs at http://localhost:8000/docs
+```
+
+---
+
+### 3. Frontend Setup
+
+```bash
 cd ../frontend
 npm install
-Create .env.local in frontend/:
-
-env
-VITE_API_URL=http://localhost:8000
-Start the frontend:
-
-bash
 npm run dev
-# App runs on http://localhost:5173
-🌐 API Endpoints
-Method	Endpoint	Description
-GET	/api/threads	List all chat threads
-POST	/api/threads	Create a new thread
-GET	/api/threads/{id}/messages	Get messages for a thread
-POST	/api/chat	Send a message (streaming SSE)
-POST	/api/upload	Upload a file (PDF/DOCX/TXT)
-🧪 Usage Examples
-💬 Normal Chat
-text
-User: How many customers do we have?
-Assistant: We have 127 customers in our database.
-📄 RAG (Uploaded File)
-Click the 📎 button and upload a PDF.
+# App running at http://localhost:5173
+```
 
-Ask: Summarise the main points from the uploaded file.
+---
 
-📊 Chart Query
-text
-User: Show total revenue by city as a bar chart.
-Assistant: [Bar chart rendered with revenue per city]
-📅 Calendar
-text
-User: What meetings do I have today?
-Assistant: You have a team sync at 10:00 AM and a client call at 2:30 PM.
-🌐 Web Search
-text
-User: Search for latest news about AI in Pakistan.
-Assistant: [Summarised news with sources]
-🧠 How It Works (High‑Level)
-User message → Frontend sends to /api/chat.
+## 🌐 API Reference
 
-LangGraph agent analyses intent and decides which tool(s) to call:
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/threads` | List all chat threads |
+| `POST` | `/api/threads` | Create a new thread |
+| `GET` | `/api/threads/{id}/messages` | Get messages for a thread |
+| `POST` | `/api/chat` | Send message (streaming response) |
+| `POST` | `/api/upload` | Upload PDF / DOCX / TXT file |
 
-query_business_database → SQLite → returns data → may generate chart JSON.
+---
 
-search_google → Google Custom Search → returns summaries.
+## 💡 Usage Examples
 
-calendar_tool → Google Calendar API → returns events.
+**Document Q&A**
+```
+Click 📎 → upload a PDF → ask:
+"Summarize the key points from the uploaded document"
+```
 
-Retrieval tool → vector search → returns context.
+**Business Data + Chart**
+```
+"Show total revenue by city as a bar chart"
+"Which account manager has the highest sales?"
+"Show monthly revenue trend for the last 6 months as a line chart"
+```
 
-Final response (with optional <chart_data> tag) is streamed back.
+**Calendar**
+```
+"What meetings do I have today?"
+"Schedule a team sync tomorrow at 3 PM to 4 PM"
+```
 
-Frontend parses chart tags and renders interactive charts using recharts.
+**Web Search**
+```
+"What is the current USD to PKR exchange rate?"
+"Search for latest news about NetsolTech"
+```
 
-🔐 Security Notes
-All sensitive credentials are stored in .env files and excluded from version control.
+---
 
-Google Service Account JSON keys are also ignored (*.json).
+## 🔐 Security Notes
 
-User‑uploaded files are stored in uploads/ (ignored) and purged after processing.
+- `.env` files and `credentials/` are excluded from version control via `.gitignore`
+- SQL tool only allows `SELECT` queries — `DROP`, `DELETE`, `INSERT`, `UPDATE` and other destructive keywords are blocked
+- File uploads are validated by extension and size (max 10MB)
+- API keys are never exposed in source code or frontend bundles
 
-🛠️ Troubleshooting
-503 Service Unavailable → Gemini API rate limit; retry after a few seconds.
+---
 
-Repository not found during push → Ensure GitHub repo is created before pushing.
+## 🛠️ Troubleshooting
 
-Frontend blank screen → Check console for errors; ensure recharts is installed.
+| Issue | Fix |
+|---|---|
+| Server crashes silently on first request | Ensure `os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"` is the first line in `run.py` |
+| `503 UNAVAILABLE` from Gemini | API rate limit — wait a few seconds and retry |
+| Calendar returns no events | Verify service account email is shared on the calendar with "Make changes to events" permission |
+| Chart not rendering | Check browser console for `<chart_data>` parse errors; ensure `recharts` is installed |
+| File upload fails | Check file is PDF/DOCX/TXT and under 10MB |
 
-🚀 Deployment (Suggested)
-Backend: Use Railway or Render – set environment variables via their dashboard.
+---
 
-Frontend: Deploy on Vercel or Netlify – set VITE_API_URL to your deployed backend URL.
+## 🚀 Deployment
 
-🤝 Contributing
-Fork the repo.
+**Backend** — [Railway](https://railway.app) or [Render](https://render.com)
+- Set all `.env` variables in the platform dashboard
+- Set start command: `python run.py`
 
-Create a feature branch: git checkout -b feature/amazing
+**Frontend** — [Vercel](https://vercel.com) or [Netlify](https://netlify.com)
+- Set `VITE_API_URL=https://your-backend-url.com`
+- Build command: `npm run build`
 
-Commit changes: git commit -m 'Add amazing feature'
+---
 
-Push: git push origin feature/amazing
+## 🤝 Contributing
 
-Open a Pull Request.
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit: `git commit -m "Add your feature"`
+4. Push: `git push origin feature/your-feature`
+5. Open a Pull Request
 
-📄 License
-This project is open‑source and available under the MIT License.
+---
 
-🙏 Acknowledgements
-LangChain / LangGraph
+## 📄 License
 
-Google Gemini API
+This project is licensed under the [MIT License](LICENSE).
 
-Recharts
+---
 
-Tailwind CSS
+## 👤 Author
 
-📬 Contact
-Author: Tashfeen
-GitHub: tashfeen786
-Project Link: https://github.com/tashfeen786/NetsolChatbot
+**Tashfeen**  
+GitHub: [@tashfeen786](https://github.com/tashfeen786)  
+Project: [NetsolChatbot](https://github.com/tashfeen786/NetsolChatbot)
+
+---
+
+<div align="center">
+Built with ❤️ using LangGraph · Gemini · React
+</div>
