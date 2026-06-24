@@ -1,4 +1,4 @@
-# NetsolChatbot
+#  NetsolChatbot
 
 <div align="center">
 
@@ -13,6 +13,32 @@ Supports RAG document Q&A, live web search, Google Calendar, natural language SQ
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 </div>
+
+---
+
+## 📸 Screenshots
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="docs/screenshots/line_chart.png" alt="Monthly Revenue Trend (Line Chart)" width="100%"/>
+      <br/>
+      <sub><b>📈 Natural language → SQL → Line Chart</b></sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/bar_chart.png" alt="Total Revenue by City (Bar Chart)" width="100%"/>
+      <br/>
+      <sub><b>📊 Revenue by City — Bar Chart</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="docs/screenshots/multi_tool.png" alt="Multi-tool: Calendar + Customer Chart" width="60%"/>
+      <br/>
+      <sub><b>🔀 Multi-tool in one query — Calendar events + Top 5 customers chart</b></sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
@@ -126,6 +152,8 @@ NetsolChatbot/
 │   │   └── services/
 │   │       └── api.js                 # Backend API calls
 │   └── package.json
+├── docs/
+│   └── screenshots/               # README screenshots
 ├── .gitignore
 └── README.md
 ```
@@ -252,6 +280,11 @@ Click 📎 → upload a PDF → ask:
 ```
 "What is the current USD to PKR exchange rate?"
 "Search for latest news about NetsolTech"
+```
+
+**Multi-tool (one query, two tools)**
+```
+"What meetings do I have today and show top 5 customers as a chart"
 ```
 
 ---
