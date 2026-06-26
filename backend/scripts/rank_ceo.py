@@ -20,7 +20,7 @@ def main():
             print(f"   Preview: {doc.page_content[:150]}...")
             print()
         
-        # Check if CEO chunk exists
+        # Check if CEO chunk 
         found_ceo = False
         for i, (doc, score) in enumerate(docs_with_scores):
             if "Najeeb" in doc.page_content or "CEO" in doc.page_content.upper():
