@@ -28,7 +28,7 @@ def llm_responder(state: AgentState) -> AgentState:
     retrieved_docs = state.get("retrieved_docs", [])
     print(f"🤖 Retrieved docs count: {len(retrieved_docs)}")
 
-    # 🔥 FIX: Current date, time, aur year extract karein
+    # 🔥 FIX: Current date, time, aur year extract 
     now = datetime.now()
     today_str = now.strftime("%Y-%m-%d")        # e.g., 2026-06-24
     current_time_str = now.strftime("%H:%M")    # e.g., 14:30
